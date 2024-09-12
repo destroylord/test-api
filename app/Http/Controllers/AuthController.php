@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -58,9 +59,23 @@ class AuthController extends Controller
     }
 
     // Refresh token method
-    public function refresh()
+    public function refresh(Request $request)
     {
-        return $this->respondWithToken(auth()->refresh());
+        try {
+            $token = JWTAuth::getToken();
+            if (!$token) {
+                return response()->json(['error' => 'Token not provided'], 400);
+            }
+
+            $newToken = JWTAuth::refresh($token);
+
+             return response()->json([
+                'accessToken' => $newToken,
+                'refreshToken' => $newToken, // Assuming you want to return the same token for refresh purposes
+            ]);
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Could not refresh token'], 500);
+        }
     }
 
     // Get user details method
